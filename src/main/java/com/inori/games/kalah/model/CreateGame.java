@@ -18,5 +18,5 @@ public class CreateGame {
     private Integer id;
 
     @Transient
-    private String url;
+    private String uri;
 }

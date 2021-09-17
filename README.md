@@ -44,8 +44,6 @@ Alternatively the project can be run using the command
 
 The models relate to the data objects that map to the columns in the database.
 
-The BaseUser class maps to the base_user table.
-
 Each variable to a column in the table and is also used to produce JSONs that are required using POST and PUT.
 
 ## Repository

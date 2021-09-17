@@ -28,8 +28,4 @@ public interface GameStateRepository extends JpaRepository<GameState, Long> {
     @Query(value= "Update game_state set url= :url where id =:id", nativeQuery = true)
     Integer saveGameUrl(String url, Integer id);
 
-    public static interface GeneratedID {
-        String getId();
-    }
-
 }

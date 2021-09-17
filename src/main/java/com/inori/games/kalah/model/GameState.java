@@ -24,50 +24,15 @@ public class GameState {
 
     @Id
     @Column(name="id")
-    @SequenceGenerator(name = "id_seq", sequenceName = "game_state_id_seq", initialValue = 777)
+    @SequenceGenerator(name = "id_seq", sequenceName = "game_state_id_seq", initialValue = 1000)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "id_seq")
     private Integer id;
 
+    @Column(name="url")
     private String url;
 
     @Type(type = "json")
     @Column(columnDefinition = "json")
     private Map<String, String> status = new HashMap<>();
-
-
-
-
-//    // Player 1 pits
-//    private Integer one;
-//
-//    private Integer two;
-//
-//    private Integer three;
-//
-//    private Integer four;
-//
-//    private Integer five;
-//
-//    private Integer six;
-//
-//    // Player 1 Kalah
-//    private Integer seven;
-//
-//
-//    // Player 2 pits
-//    private Integer eight;
-//
-//    private Integer nine;
-//
-//    private Integer ten;
-//
-//    private Integer eleven;
-//
-//    private Integer twelve;
-//
-//    private Integer thirteen;
-//
-//    // Player 2 Kallah
-//    private Integer fourteen;
 
 }

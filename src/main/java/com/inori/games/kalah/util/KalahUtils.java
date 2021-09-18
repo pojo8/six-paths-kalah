@@ -1,9 +1,12 @@
 package com.inori.games.kalah.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inori.games.kalah.exceptions.InvalidPitException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -43,5 +46,38 @@ public class KalahUtils {
         } else {
             throw new InvalidPitException("The pit selected must be either 1 - 6 for player 1 or 8 - 13 for player 2");
         }
+    }
+
+    /**
+     * A method that takes
+     * @param gameState
+     *  a json string and
+     * @return the equivalent hashMap
+     */
+    public static HashMap<String, Object> convertJsonToHmap(String gameState) {
+        ObjectMapper mapper = new ObjectMapper();
+
+        HashMap<String, Object> stateMap = null;
+        try {
+            stateMap = mapper.readValue(gameState, HashMap.class);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return stateMap;
+    }
+
+
+    public static String convertHmapToJson(HashMap<String, Object> stateMap) {
+        ObjectMapper mapper = new ObjectMapper();
+
+        String stateJson = null;
+
+        try {
+             stateJson = mapper.writeValueAsString(stateMap);
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return stateJson;
     }
 }

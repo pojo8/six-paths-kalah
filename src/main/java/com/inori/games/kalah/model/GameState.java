@@ -1,6 +1,6 @@
 package com.inori.games.kalah.model;
 
-import com.vladmihalcea.hibernate.type.json.JsonType;
+import com.vladmihalcea.hibernate.type.json.JsonStringType;
 import lombok.*;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
@@ -18,7 +18,7 @@ import java.util.Map;
 @Entity(name="GameState")
 @Table(name = "GameState")
 @TypeDefs({
-        @TypeDef(name = "json", typeClass = JsonType.class)
+        @TypeDef(name = "json", typeClass = JsonStringType.class)
 })
 public class GameState {
 
@@ -33,6 +33,8 @@ public class GameState {
 
     @Type(type = "json")
     @Column(columnDefinition = "json")
-    private Map<String, String> status = new HashMap<>();
+    @Convert(disableConversion = true)
+    private Map<String, Object> status = new HashMap<>();
+//    private Map<String, String> status = new HashMap<>();
 
 }

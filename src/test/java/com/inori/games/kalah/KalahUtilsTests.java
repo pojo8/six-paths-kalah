@@ -18,4 +18,13 @@ class KalahUtilsTests {
 		assertTrue(firstPlayer.equals(PLAYER1) || firstPlayer.equals(PLAYER2));
 	}
 
+	@Test
+	@DisplayName("Testing conversion form json string to HashMap")
+	void jsonConversionTest(){
+		String jsonState = "{\"1\" : 6, \"2\" : 6, \"3\" : 6, \"4\" : 6, \"5\" : 6, \"6\" : 6, \"7\" : 0, \"8\" : 6, \"9\" : 6, \"10\" : 6, \"11\" : 6, \"12\" : 6, \"13\" : 6, \"14\" : 0}";
+		Object convertedState = KalahUtils.convertJsonToHmap(jsonState);
+
+		assertEquals("java.util.HashMap", convertedState.getClass().getName());
+	}
+
 }

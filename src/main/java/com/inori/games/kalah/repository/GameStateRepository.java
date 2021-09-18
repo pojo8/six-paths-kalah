@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import javax.transaction.Transactional;
+import java.util.HashMap;
 import java.util.List;
 
 public interface GameStateRepository extends JpaRepository<GameState, Long> {
@@ -26,6 +27,24 @@ public interface GameStateRepository extends JpaRepository<GameState, Long> {
     @Transactional
     @Modifying(clearAutomatically = true)
     @Query(value= "Update game_state set url= :url where id =:id", nativeQuery = true)
-    Integer saveGameUrl(String url, Integer id);
+    void saveGameUrl(String url, Integer id);
 
+    @Transactional
+    @Modifying(clearAutomatically = true)
+    @Query(value="Update game_state set status= Cast(:status as json) where id =:id", nativeQuery = true)
+    Integer saveUpdatedGameState(String status, Integer id);
+
+
+    @Transactional
+    @Query(value = "select Cast(status as varchar) from game_state where id=:id", nativeQuery = true)
+    String retrieveGameStateById(Integer id);
+
+    @Transactional
+    @Query(value = "select url from game_state where id=:id", nativeQuery = true)
+    String retrieveUrlById(Integer id);
+
+    // Would ideally like to map status fetch directly to hashmap
+    public static interface Status {
+        HashMap<String, Integer> getStatus();
+    }
 }

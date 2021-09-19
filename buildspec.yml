@@ -1,0 +1,35 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+      - REPOSITORY_URI=681679871143.dkr.ecr.eu-west-1.amazonaws.com/kalah
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - echo $COMMIT_HASH
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo building the Jar file
+      - mvn package -DskipTests
+      - echo Building the Docker image...
+      - docker build -t kalah .
+      - docker tag kalah:latest 681679871143.dkr.ecr.eu-west-1.amazonaws.com/kalah:latest
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push 681679871143.dkr.ecr.eu-west-1.amazonaws.com/kalah/kalah:latest
+      - echo Writing image definitions file...
+      - printf '[{"name":"kalah","imageUri":"%s"}]' $REPOSITORY_URI:latest > imagedefinitions.json
+      - cat imagedefinitions.json
+    finally:
+      - echo cleaning up docker credentials
+      - rm -rfv /root/.docker/
+
+artifacts:
+  files:
+    - imagedefinitions.json
+  discard-paths: yes

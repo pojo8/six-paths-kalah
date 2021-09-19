@@ -1,16 +1,13 @@
 package com.inori.games.kalah.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.inori.games.kalah.component.MoveComponent;
 import com.inori.games.kalah.exceptions.IncorrectPlayerMoveException;
 import com.inori.games.kalah.exceptions.InvalidPitException;
 import com.inori.games.kalah.model.CreateGame;
 import com.inori.games.kalah.model.GameState;
-import com.inori.games.kalah.model.GameTurn;
 import com.inori.games.kalah.repository.GameStateRepository;
 import com.inori.games.kalah.repository.GameTurnRepository;
 import com.inori.games.kalah.util.KalahUtils;
-import com.vladmihalcea.hibernate.type.json.JsonStringType;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.inori.games.kalah.common.AppConstants.*;
 
@@ -33,20 +29,22 @@ import static com.inori.games.kalah.common.AppConstants.*;
 public class KalahRestController {
 
     @Autowired
-    GameStateRepository gameStateRepository;
+    private GameStateRepository gameStateRepository;
 
     @Autowired
-    GameTurnRepository gameTurnRepository;
+    private GameTurnRepository gameTurnRepository;
+
+    @Autowired
+    private MoveComponent moveComponent;
 
     @Value("${server.port}")
-    Integer serverPort;
+    private Integer serverPort;
 
     @Value("${server.host}")
-    String serverHost;
+    private String serverHost;
 
     @Value("${server.protocol}")
-    String serverProtocol;
-
+    private String serverProtocol;
 
 
     @GetMapping("/list")
@@ -100,6 +98,8 @@ public class KalahRestController {
 
         String url = gameStateRepository.retrieveUrlById(gameIdValue);
         Integer inputMoveMadeByPlayer;
+
+        // Checking a valid move is made by the player
         try {
             inputMoveMadeByPlayer = KalahUtils.moveMadeBy(pitIdValue);
         } catch (InvalidPitException ipe) {
@@ -109,11 +109,11 @@ public class KalahRestController {
             return new ResponseEntity<>(body, HttpStatus.NOT_ACCEPTABLE);
         }
 
-        // Fetching the specified played
+        // Fetching the specified player from Game Turn
         Integer playersTurn = gameTurnRepository.getNextPlayerByGameId(gameIdValue);
         log.info("The next move should be made by Player {}", playersTurn);
 
-        // Testing the correct player makes the move
+        // Checking that correct player makes the move
         try{
             if (!playersTurn.equals(inputMoveMadeByPlayer)) {
                 throw new IncorrectPlayerMoveException("It is currently not your turn. Please allow the other player to make their move");
@@ -125,88 +125,68 @@ public class KalahRestController {
             return new ResponseEntity<>(body, HttpStatus.NOT_ACCEPTABLE);
         }
 
-        // Getting the game state string and converitn gto hasmap
+        // Getting the game state string and converting to hashmap
         String gameState = gameStateRepository.retrieveGameStateById(gameIdValue);
 
-        AtomicInteger stonesPickedUp = new AtomicInteger(0);
-
-
-        HashMap<String, Object> stateMap = KalahUtils.convertJsonToHmap(gameState);
-
-        Integer stones = (Integer) stateMap.get(pitId);
-        stonesPickedUp.lazySet(stones);
-
-        // Clear stones in that pit
-        stateMap.put(pitId, 0);
-        for(int i=pitIdValue+1; i<=stones+2; i++){
-            log.info("Adding a stone to pit {}", i);
-            // gets the number in the pit
-
-            if(i == (stones+2) && !(stonesPickedUp.getAcquire() ==0)){
-                i=0;
-            } else {
-                Integer stonesInNextPit = (Integer) stateMap.get(String.valueOf(i));
-
-                // Test granted that next move is into an empty pit
-                if (stonesPickedUp.get() == 1 && stonesInNextPit == 0) {
-                    log.info("Great move! Capturing opponents stones");
-                    Integer capturedStones = 0;
-                    if (playersTurn.equals(1)) {
-                        capturedStones = (Integer) stateMap.get(PLAYER_2_PITS.get((PLAYER_2_PITS.size() - 1) - i));
-                        stateMap.put(String.valueOf(i), capturedStones + 1);
-
-                        gameTurnRepository.updateGameMove(2, gameIdValue);
-                        stonesPickedUp.decrementAndGet();
-                    } else {
-                        capturedStones = (Integer) stateMap.get(PLAYER_1_PITS.get((PLAYER_1_PITS.size() - 1) - i));
-                        stateMap.put(String.valueOf(i), capturedStones + 1);
-
-                        gameTurnRepository.updateGameMove(1, gameIdValue);
-                        stonesPickedUp.decrementAndGet();
-                    }
-                    log.info("Adding {} captured stones plus your last stone to pit: {}", capturedStones, i);
-                } else if (stonesPickedUp.get() == 1 && i == 7 || i == 14) {
-                    if (playersTurn.equals(1)) {
-                        // case of player 1
-                        stateMap.put(String.valueOf(i), stonesInNextPit + 1);
-                        gameTurnRepository.updateGameMove(1, gameIdValue);
-                        stonesPickedUp.decrementAndGet();
-
-                    } else {
-                        // case for player 2
-                        stateMap.put(String.valueOf(i), stonesInNextPit + 1);
-                        gameTurnRepository.updateGameMove(2, gameIdValue);
-                        stonesPickedUp.decrementAndGet();
-
-                    }
-                    log.info("Nice move! It is your turn again");
-                } else if (stonesPickedUp.get() == 0) {
-                    if (playersTurn.equals(1)) {
-                        // case of player 1
-                        gameTurnRepository.updateGameMove(2, gameIdValue);
-
-                    } else {
-                        // case for player 2
-                        gameTurnRepository.updateGameMove(1, gameIdValue);
-                    }
-                    log.info("Next players turn");
-                } else {
-                    stateMap.put(String.valueOf(i), stonesInNextPit + 1);
-                    stonesPickedUp.decrementAndGet();
-                }
-            }
-
-        }
+        HashMap<String, Object> stateMap = moveComponent.gameMove(gameState, pitId, gameId, playersTurn );
 
         // converting updated state for saving
         String stateJson = KalahUtils.convertHmapToJson(stateMap);
+
         gameStateRepository.saveUpdatedGameState(stateJson, gameIdValue);
+
+        // checks win condition pits 1-6: 0 stones or pits 8-13:0
+        String gameWinner = KalahUtils.hasGameCompleted(stateMap);
+        if(gameWinner.length()>0){
+            JSONObject body = new JSONObject();
+            body.put("status", stateJson);
+            body.put("id", gameId);
+            body.put("url", url);
+            body.put("message", "Good game the winner is: "+ gameWinner);
+            return new ResponseEntity<>(body, HttpStatus.OK);
+        }
 
         GameState updatedGameState = new GameState();
         updatedGameState.setId(gameIdValue);
         updatedGameState.setUrl(url);
         updatedGameState.setStatus(stateMap);
 
-        return new ResponseEntity<>(updatedGameState, HttpStatus.OK);
+        return new ResponseEntity<>(updatedGameState,HttpStatus.OK);
     }
+
+    @GetMapping("/{gameId}/leader")
+    public HttpEntity<? extends Object> findCurrentLeader(@PathVariable String gameId) {
+        Integer gameIdValue = Integer.valueOf(gameId);
+
+        // fetch game state
+        String gameState = gameStateRepository.retrieveGameStateById(gameIdValue);
+
+        // convert to hash map
+        HashMap<String, Object> stateMap = KalahUtils.convertJsonToHmap(gameState);
+
+        // compare kalah stone amount
+        Integer player1KalahStones = (Integer) stateMap.get("7");
+        Integer player2KalahStones = (Integer) stateMap.get("14");
+
+        Integer playerLeading = player1KalahStones.compareTo(player2KalahStones);
+
+        // Should Override/ custom comparable
+        if(playerLeading.equals(1)){
+            JSONObject body = new JSONObject();
+            body.put("message", "The player currently in the lead is player 1");
+            return new ResponseEntity<>( body, HttpStatus.OK);
+
+        } else if (playerLeading.equals(-1)){
+            JSONObject body = new JSONObject();
+            body.put("message", "The player currently in the lead is player 2");
+            return new ResponseEntity<>( body, HttpStatus.OK);
+
+        } else{
+            JSONObject body = new JSONObject();
+            body.put("message", "Both players are tied with the same number of stones in their Kalah");
+            return new ResponseEntity<>( body, HttpStatus.OK);
+        }
+
+    }
+
 }

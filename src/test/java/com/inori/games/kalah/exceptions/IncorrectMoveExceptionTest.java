@@ -1,4 +1,4 @@
-package com.inori.games.kalah;
+package com.inori.games.kalah.exceptions;
 
 import com.inori.games.kalah.controller.KalahRestController;
 import com.inori.games.kalah.exceptions.IncorrectPlayerMoveException;

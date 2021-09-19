@@ -12,6 +12,8 @@ import java.util.Random;
 
 import static com.inori.games.kalah.common.AppConstants.PLAYER1;
 import static com.inori.games.kalah.common.AppConstants.PLAYER2;
+import static com.inori.games.kalah.common.AppConstants.PLAYER_1_NO_KALAH;
+import static com.inori.games.kalah.common.AppConstants.PLAYER_2_NO_KALAH;
 
 @Slf4j
 public class KalahUtils {
@@ -79,5 +81,45 @@ public class KalahUtils {
             e.printStackTrace();
         }
         return stateJson;
+    }
+
+    /**
+     * Method that determines the winner of the game
+     * taking in
+     * @param stateMap
+     * and
+     * @return winning player
+     */
+    public static String hasGameCompleted(HashMap<String, Object> stateMap) {
+        Integer player1Total =0;
+        Integer player2Total =0;
+
+        for (String pitId:
+             PLAYER_1_NO_KALAH) {
+            Integer stonesFound = (Integer) stateMap.get(pitId);
+            player1Total += stonesFound;
+        }
+
+        for (String pitId:
+                PLAYER_2_NO_KALAH) {
+            Integer stonesFound = (Integer) stateMap.get(pitId);
+            player2Total += stonesFound;
+        }
+
+        if(player1Total.equals(0) || player2Total.equals(0)){
+            log.info("A player has run out of stones");
+
+            Integer player1KalahStones = (Integer) stateMap.get("7");
+            Integer player2KalahStones = (Integer) stateMap.get("14");
+
+            Integer winner = player1KalahStones.compareTo(player2KalahStones);
+            if(winner.equals(1)){
+                return PLAYER1;
+            } else {
+                return PLAYER2;
+            }
+        }
+
+        return "";
     }
 }
